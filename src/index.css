@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Raleway:ital,wght@0,100..900;1,100..900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* src/index.css */
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --accent: #f59e0b;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --info: #3b82f6;
+    --background-color: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-white: #ffffff;
+    --border-light: #e5e7eb;
+    --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-heavy: 0 10px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  [data-theme='dark'] {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --accent: #fbbf24;
+    --success: #34d399;
+    --warning: #f59e0b;
+    --info: #60a5fa;
+    --background-color: #1f2937;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --text-white: #ffffff;
+    --border-light: #4b5563;
+    --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-heavy: 0 10px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  body {
+    margin: 0;
+    font-family:'Raleway', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+  }
+  
+  main {
+    background-color: var(--background-color);
+    min-height: 100vh;
+  }
+  
+  * {
+    box-sizing: border-box;
+  }
