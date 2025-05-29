@@ -803,7 +803,7 @@ const ManageBlog = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen pt-16 bg-gradient-to-br from-[var(--bg-light)] via-[var(--primary-light)]/20 to-[var(--accent-light)]/20 overflow-hidden">
+      <div className="min-h-screen pt-16 md:pt-4 bg-gradient-to-br from-[var(--bg-light)] via-[var(--primary-light)]/20 to-[var(--accent-light)]/20 overflow-hidden">
         <ToastContainer
           position="top-right"
           autoClose={3000}
