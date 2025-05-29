@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
-import axiosInstance from '@/utils/axios'; // Use @ alias
-import colors from '@/utils/colors';
+import axiosInstance from '@/utils/axios';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -17,23 +16,88 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     try {
-      console.log('Attempting login with:', formData.email);
+      console.log('=== LOGIN ATTEMPT ===');
+      console.log('Email:', formData.email);
+      console.log('Environment VITE_API_URL:', import.meta.env.VITE_API_URL);
+      console.log('Axios base URL:', axiosInstance.defaults.baseURL);
+      
       const response = await axiosInstance.post('/auth/login', {
         email: formData.email,
         password: formData.password,
       });
-      localStorage.setItem('token', response.data.token);
-      toast.success('Login successful!', { position: 'top-right' });
-      navigate('/admin');
+
+      console.log('=== LOGIN SUCCESS ===');
+      console.log('Full response:', response);
+      console.log('Response data:', response.data);
+      console.log('Token received:', !!response.data.token);
+      
+      // Check if we actually got a token
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        console.log('Token stored in localStorage');
+        
+        toast.success('Login successful!', { 
+          position: 'top-right',
+          autoClose: 2000
+        });
+        
+        // Add a small delay before navigation to let user see the success message
+        setTimeout(() => {
+          console.log('Navigating to /admin');
+          navigate('/admin');
+        }, 1000);
+      } else {
+        console.error('No token in response:', response.data);
+        throw new Error('No token received from server');
+      }
+      
     } catch (error) {
-      console.error('Login error:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
+      console.log('=== LOGIN ERROR ===');
+      console.error('Full error object:', error);
+      console.error('Error response:', error.response);
+      console.error('Error config:', error.config);
+      console.error('Request URL that failed:', error.config?.baseURL + error.config?.url);
+      
+      let message = 'Login failed. Please try again.';
+      
+      if (error.response) {
+        console.log('Server responded with error status:', error.response.status);
+        console.log('Server error data:', error.response.data);
+        
+        // Server responded with error status
+        switch (error.response.status) {
+          case 400:
+            message = error.response.data?.message || 'Invalid email or password format.';
+            break;
+          case 401:
+            message = error.response.data?.message || 'Invalid email or password.';
+            break;
+          case 403:
+            message = 'Access forbidden. Please check your credentials.';
+            break;
+          case 404:
+            message = 'Login endpoint not found. Please contact support.';
+            break;
+          case 500:
+            message = 'Server error. Please try again later.';
+            break;
+          default:
+            message = error.response.data?.message || `Server error (${error.response.status})`;
+        }
+      } else if (error.request) {
+        console.log('Network error - no response received');
+        message = 'Unable to connect to the server. Please check your internet connection.';
+      } else {
+        console.log('Other error:', error.message);
+        message = error.message || 'An unexpected error occurred.';
+      }
+      
+      toast.error(message, { 
+        position: 'top-right',
+        autoClose: 5000
       });
-      const message = error.response?.data?.message || 'Login failed. Please try again.';
-      toast.error(message, { position: 'top-right' });
     } finally {
       setIsSubmitting(false);
     }
@@ -56,6 +120,13 @@ const Login = () => {
         >
           Admin Login
         </h1>
+        
+        {/* Debug info */}
+        <div style={{ fontSize: '12px', color: '#666', marginBottom: '16px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
+          <div>API URL: {import.meta.env.VITE_API_URL || 'undefined'}</div>
+          <div>Base URL: {axiosInstance.defaults.baseURL}</div>
+        </div>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -76,6 +147,7 @@ const Login = () => {
                 color: 'var(--text-primary)',
               }}
               required
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -97,6 +169,7 @@ const Login = () => {
                 color: 'var(--text-primary)',
               }}
               required
+              disabled={isSubmitting}
             />
           </div>
           <button
