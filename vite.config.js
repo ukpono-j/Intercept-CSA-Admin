@@ -5,21 +5,29 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    extensions: ['.js', '.jsx', '.ts', '.tsx'], // Future-proof for TypeScript
+    extensions: ['.js', '.jsx', '.ts', '.tsx'],
     alias: {
-      '@': path.resolve(__dirname, './src'), // Simplify imports
+      '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
-    port: 5175, // Avoid conflict with frontend (5173)
+    port: 5175,
     open: true,
     cors: {
       origin: [
-        'http://localhost:3000', // Local backend
-        'https://intercept-csa-backend.onrender.com', // Production backend
+        'http://localhost:3000',
+        'https://intercept-csa-backend.onrender.com',
       ],
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
       credentials: true,
+    },
+    proxy: {
+      '/api': {
+        target: 'https://intercept-csa-backend.onrender.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
+      },
     },
     fs: {
       allow: ['.'],
