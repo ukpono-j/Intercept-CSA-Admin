@@ -1,9 +1,8 @@
-// src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
-import axiosInstance from '../utils/axios';
-import colors from '../utils/colors';
+import axiosInstance from '@/utils/axios'; // Use @ alias
+import colors from '@/utils/colors';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -19,15 +18,22 @@ const Login = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      console.log('Attempting login with:', formData.email);
       const response = await axiosInstance.post('/auth/login', {
         email: formData.email,
         password: formData.password,
       });
       localStorage.setItem('token', response.data.token);
-      toast.success('Login successful!');
+      toast.success('Login successful!', { position: 'top-right' });
       navigate('/admin');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error('Login error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      const message = error.response?.data?.message || 'Login failed. Please try again.';
+      toast.error(message, { position: 'top-right' });
     } finally {
       setIsSubmitting(false);
     }

@@ -5,36 +5,36 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    extensions: ['.js', '.jsx', '.ts', '.tsx'], // Support TypeScript if needed
+    extensions: ['.js', '.jsx', '.ts', '.tsx'], // Future-proof for TypeScript
     alias: {
-      '@': path.resolve(__dirname, './src'), // Simplify imports (e.g., '@/pages/ManageBlog')
+      '@': path.resolve(__dirname, './src'), // Simplify imports
     },
   },
   server: {
-    port: 5174, // Different from frontend (5173) to avoid conflicts
-    open: true, // Open browser on start
+    port: 5175, // Avoid conflict with frontend (5173)
+    open: true,
     cors: {
       origin: [
         'http://localhost:3000', // Local backend
         'https://intercept-csa-backend.onrender.com', // Production backend
       ],
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
-      credentials: true, // For auth tokens
+      credentials: true,
     },
     fs: {
-      allow: ['.'], // Allow project root access
+      allow: ['.'],
     },
   },
-  publicDir: 'public', // Serve static assets
-  base: '/', // Root path for Vercel
+  publicDir: 'public',
+  base: '/',
   build: {
-    outDir: 'dist', // Output directory
-    sourcemap: false, // Disable sourcemaps in production
-    minify: 'esbuild', // Faster, smaller bundles
+    outDir: './dist',
+    sourcemap: false,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', 'axios'], // Split vendor code
+          vendor: ['react', 'react-dom', 'react-router-dom', 'axios', 'react-toastify'],
         },
       },
     },

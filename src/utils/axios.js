@@ -1,12 +1,15 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://intercept-csa-backend.onrender.com/api';
+
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 60000,
+  withCredentials: true, // Ensure credentials are sent
 });
 
 axiosRetry(axiosInstance, {
@@ -17,7 +20,11 @@ axiosRetry(axiosInstance, {
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    console.log('Axios request URL:', config.baseURL + config.url); // Debug log
+    console.log('Axios request:', {
+      url: config.baseURL + config.url,
+      method: config.method,
+      headers: config.headers,
+    });
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -33,7 +40,12 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('Axios response error:', error.response?.status, error.response?.data);
+    console.error('Axios response error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      headers: error.response?.headers,
+    });
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
