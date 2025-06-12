@@ -121,7 +121,7 @@ const ManageBlog = () => {
       setIsLoading(true);
       setError(null);
       try {
-        console.log('Fetching blogs with params:', { search: searchTerm, status: selectedFilter, sortBy });
+        // console.log('Fetching blogs with params:', { search: searchTerm, status: selectedFilter, sortBy });
         const response = await axiosInstance.get('/blogs', {
           params: { search: searchTerm, status: selectedFilter, sortBy },
         });

@@ -18,25 +18,25 @@ const Login = () => {
     setIsSubmitting(true);
     
     try {
-      console.log('=== LOGIN ATTEMPT ===');
-      console.log('Email:', formData.email);
-      console.log('Environment VITE_API_URL:', import.meta.env.VITE_API_URL);
-      console.log('Axios base URL:', axiosInstance.defaults.baseURL);
+      // console.log('=== LOGIN ATTEMPT ===');
+      // console.log('Email:', formData.email);
+      // console.log('Environment VITE_API_URL:', import.meta.env.VITE_API_URL);
+      // console.log('Axios base URL:', axiosInstance.defaults.baseURL);
       
       const response = await axiosInstance.post('/auth/login', {
         email: formData.email,
         password: formData.password,
       });
 
-      console.log('=== LOGIN SUCCESS ===');
-      console.log('Full response:', response);
-      console.log('Response data:', response.data);
-      console.log('Token received:', !!response.data.token);
+      // console.log('=== LOGIN SUCCESS ===');
+      // console.log('Full response:', response);
+      // console.log('Response data:', response.data);
+      // console.log('Token received:', !!response.data.token);
       
       // Check if we actually got a token
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
-        console.log('Token stored in localStorage');
+        // console.log('Token stored in localStorage');
         
         toast.success('Login successful!', { 
           position: 'top-right',
@@ -45,7 +45,7 @@ const Login = () => {
         
         // Add a small delay before navigation to let user see the success message
         setTimeout(() => {
-          console.log('Navigating to /admin');
+          // console.log('Navigating to /admin');
           navigate('/admin');
         }, 1000);
       } else {
@@ -54,7 +54,7 @@ const Login = () => {
       }
       
     } catch (error) {
-      console.log('=== LOGIN ERROR ===');
+      // console.log('=== LOGIN ERROR ===');
       console.error('Full error object:', error);
       console.error('Error response:', error.response);
       console.error('Error config:', error.config);
@@ -63,8 +63,8 @@ const Login = () => {
       let message = 'Login failed. Please try again.';
       
       if (error.response) {
-        console.log('Server responded with error status:', error.response.status);
-        console.log('Server error data:', error.response.data);
+        // console.log('Server responded with error status:', error.response.status);
+        // console.log('Server error data:', error.response.data);
         
         // Server responded with error status
         switch (error.response.status) {
@@ -87,10 +87,10 @@ const Login = () => {
             message = error.response.data?.message || `Server error (${error.response.status})`;
         }
       } else if (error.request) {
-        console.log('Network error - no response received');
+        // console.log('Network error - no response received');
         message = 'Unable to connect to the server. Please check your internet connection.';
       } else {
-        console.log('Other error:', error.message);
+        // console.log('Other error:', error.message);
         message = error.message || 'An unexpected error occurred.';
       }
       

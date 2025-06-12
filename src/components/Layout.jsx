@@ -24,10 +24,10 @@ const Layout = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  console.log('Layout: Rendering for route', location.pathname);
+  // console.log('Layout: Rendering for route', location.pathname);
 
   const handleLogout = () => {
-    console.log('Layout: Logging out');
+    // console.log('Layout: Logging out');
     localStorage.removeItem('token');
     window.location.href = '/login';
   };
@@ -59,6 +59,7 @@ const Layout = () => {
             <Outlet />
             {location.pathname === '/admin' && 
              !window.location.pathname.includes('create-blog') && 
+             !window.location.pathname.includes('show-reports') && 
              !window.location.pathname.includes('manage-blog') && 
              !window.location.pathname.includes('registrations') && (
               <div className="mt-8">

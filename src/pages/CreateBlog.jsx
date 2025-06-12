@@ -12,11 +12,11 @@ const axiosInstance = {
   }
 };
 
-// Mock toast for demo
-const toast = {
-  success: (message) => console.log('✅ Success:', message),
-  error: (message) => console.log('❌ Error:', message)
-};
+// // Mock toast for demo
+// const toast = {
+//   success: (message) => // console.log('✅ Success:', message),
+//   error: (message) => // console.log('❌ Error:', message)
+// };
 
 // Enhanced Stats Card Component
 const StatsCard = ({ title, value, icon: Icon, color, trend }) => (
@@ -155,7 +155,7 @@ const CreateBlog = () => {
       });
 
       toast.success('Article created successfully!');
-      console.log('Navigation to /admin/manage-blog would happen here');
+      // console.log('Navigation to /admin/manage-blog would happen here');
     } catch (error) {
       console.error('Create article error:', error);
       toast.error('Failed to create article');

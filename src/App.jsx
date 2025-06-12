@@ -11,6 +11,7 @@ import colors from './utils/colors';
 import './index.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { Component } from 'react';
+import ShowReports from './pages/ShowReports';
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
@@ -41,13 +42,13 @@ class ErrorBoundary extends Component {
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  console.log('ProtectedRoute: Token present?', !!token);
+  // console.log('ProtectedRoute: Token present?', !!token);
   return token ? children : <Navigate to="/login" />;
 };
 
 const App = () => {
   colors.applyTheme();
-  console.log('App component rendered');
+  // console.log('App component rendered');
 
   return (
     <Router>
@@ -67,6 +68,7 @@ const App = () => {
             <Route path="create-blog" element={<CreateBlog />} />
             <Route path="manage-blog" element={<ManageBlog />} />
             <Route path="registrations" element={<Registrations />} />
+            <Route path="show-reports" element={<ShowReports />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
