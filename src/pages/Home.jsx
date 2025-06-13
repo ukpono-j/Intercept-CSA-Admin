@@ -117,9 +117,9 @@ const Home = () => {
             <Icon size={24} style={{ color: 'var(--text-white)' }} />
           </div>
           <div className={`text-xs font-semibold px-2 py-1 rounded-full bg-gradient-to-r ${color} text-white shadow-md`}>
-            {title === "Total Users" ? "+12%" : 
-             title === "Total Posts" ? "+5%" : 
-             title === "Total Views" ? "+28%" : "+3.2%"}
+            {title === "Total Users" ? "+12%" :
+              title === "Total Posts" ? "+5%" :
+                title === "Total Views" ? "+28%" : "+3.2%"}
           </div>
         </div>
         <div className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -152,32 +152,32 @@ const Home = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-rose-500/20 to-purple-500/20 animate-pulse"></div>
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        
-        <div className="relative z-10 p-12">
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <h1 className="text-6xl font-black bg-gradient-to-r from-orange-400 via-rose-400 to-purple-400 bg-clip-text text-transparent mb-4">
+
+        <div className="relative z-10 p-4 sm:p-6 md:p-8 lg:p-12">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6 animate-fade-in">
+            <div className="text-left max-w-full md:max-w-lg">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-orange-400 via-rose-400 to-purple-400 bg-clip-text text-transparent mb-3 tracking-tight">
                 Welcome Back
               </h1>
-              <p className="text-xl text-slate-300 font-light max-w-2xl leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-slate-300 font-light leading-relaxed">
                 Your dashboard is ready. Manage content, track performance, and engage with your community all in one beautiful interface.
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-orange-400 text-lg font-semibold">
-                {currentTime.toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+            <div className="text-left md:text-right">
+              <div className="text-orange-400 text-sm sm:text-base md:text-lg font-semibold">
+                {currentTime.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
                 })}
               </div>
-              <div className="text-slate-300 text-3xl font-mono">
-                {currentTime.toLocaleTimeString('en-US', { 
+              <div className="text-slate-300 text-lg sm:text-xl md:text-2xl lg:text-3xl font-mono mt-1">
+                {currentTime.toLocaleTimeString('en-US', {
                   hour12: false,
                   hour: '2-digit',
                   minute: '2-digit',
-                  second: '2-digit'
+                  second: '2-digit',
                 })}
               </div>
             </div>
@@ -261,11 +261,10 @@ const Home = () => {
               className="flex items-center p-4 rounded-2xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-rose-50 transition-all duration-300 group"
             >
               <div
-                className={`p-3 rounded-xl mr-4 ${
-                  status.type === 'published' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' :
+                className={`p-3 rounded-xl mr-4 ${status.type === 'published' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' :
                   status.type === 'draft' ? 'bg-gradient-to-r from-orange-500 to-amber-500' :
-                  'bg-gradient-to-r from-purple-500 to-indigo-500'
-                } text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                    'bg-gradient-to-r from-purple-500 to-indigo-500'
+                  } text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
               >
                 {status.icon}
               </div>
@@ -312,15 +311,14 @@ const Home = () => {
                 className="flex items-center p-4 rounded-2xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-rose-50 transition-all duration-300 group"
               >
                 <div
-                  className={`p-3 rounded-xl mr-4 ${
-                    activity.type === 'user' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' :
+                  className={`p-3 rounded-xl mr-4 ${activity.type === 'user' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' :
                     activity.type === 'blog' ? 'bg-gradient-to-r from-orange-500 to-amber-500' :
-                    'bg-gradient-to-r from-purple-500 to-indigo-500'
-                  } text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                      'bg-gradient-to-r from-purple-500 to-indigo-500'
+                    } text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
                 >
                   {activity.type === 'user' ? <Users size={20} /> :
-                   activity.type === 'blog' ? <FileText size={20} /> :
-                   <AlertCircle size={20} />}
+                    activity.type === 'blog' ? <FileText size={20} /> :
+                      <AlertCircle size={20} />}
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold group-hover:text-orange-600 transition-colors duration-300" style={{ color: 'var(--text-primary)' }}>
