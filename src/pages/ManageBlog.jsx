@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Upload, Eye, Save, Image, X, Plus, Tag, Clock, Grid, List, Edit, Trash, Menu } from 'lucide-react';
+import { Upload, Eye, Save, Image, X, Plus, Tag, Clock, Grid, List, Edit, Trash2, Menu, Search, Download, FileText, TrendingUp, Calendar, MessageCircle } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import axiosInstance from '../utils/axios';
-import colors from '../utils/colors';
 import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -22,12 +21,12 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-6 text-center">
+        <div className="p-6 text-center bg-white rounded-2xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold text-red-600">Something went wrong</h2>
           <p className="text-sm text-gray-600">{this.state.error?.message || 'Unknown error'}</p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="mt-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all duration-200"
+            className="mt-4 px-4 py-2 rounded-xl bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all duration-200"
           >
             Retry
           </button>
@@ -38,34 +37,32 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Reusable Modal Component
-const Modal = ({ isOpen, onClose, title, children }) => {
+// Reusable Modal Component (Aligned with Registrations)
+const Modal = ({ isOpen, onClose, title, children, size = 'default' }) => {
   if (!isOpen) return null;
 
+  const sizeClasses = {
+    small: 'max-w-md',
+    default: 'max-w-2xl',
+    large: 'max-w-4xl'
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div
-        className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto transform transition-all duration-300 scale-100 origin-center animate-slide-in"
-        style={{
-          boxShadow: 'var(--shadow-heavy)',
-          border: '1px solid var(--border-light)',
-          zIndex: 60,
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            {title}
-          </h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className={`bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200`}>
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-slate-50 to-gray-50">
+          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
-            style={{ color: 'var(--text-primary)' }}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={20} className="text-gray-500" />
           </button>
         </div>
-        {children}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -101,6 +98,27 @@ const debounce = (func, wait) => {
   };
 };
 
+// Stats Card Component (Inspired by Registrations)
+const StatsCard = ({ title, value, icon: Icon, trend }) => (
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-600">{title}</p>
+        <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+        {trend && (
+          <p className={`text-sm mt-2 flex items-center gap-1 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <TrendingUp size={14} />
+            {trend > 0 ? '+' : ''}{trend}% this month
+          </p>
+        )}
+      </div>
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-r from-yellow-500 to-yellow-500">
+        <Icon size={28} className="text-white" />
+      </div>
+    </div>
+  </div>
+);
+
 const ManageBlog = () => {
   const navigate = useNavigate();
   const user = useMemo(() => getUserFromToken(), []);
@@ -121,7 +139,6 @@ const ManageBlog = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // console.log('Fetching blogs with params:', { search: searchTerm, status: selectedFilter, sortBy });
         const response = await axiosInstance.get('/blogs', {
           params: { search: searchTerm, status: selectedFilter, sortBy },
         });
@@ -159,7 +176,7 @@ const ManageBlog = () => {
     if (!window.confirm('Are you sure you want to delete this post?')) return;
     try {
       await axiosInstance.delete(`/blogs/${postId}`);
-      toast.success('Blog post deleted sharp sharp!');
+      toast.success('Blog post deleted successfully!');
       fetchBlogs();
     } catch (error) {
       console.error('Delete blog error:', error.response?.data || error.message);
@@ -167,29 +184,41 @@ const ManageBlog = () => {
     }
   }, [fetchBlogs]);
 
+  const exportToCSV = () => {
+    const headers = ['Title', 'Excerpt', 'Category', 'Status', 'Created At', 'Views', 'Comments'];
+    const rows = blogPosts.map((post) => [
+      `"${post.title.replace(/"/g, '""')}"`,
+      `"${post.excerpt?.replace(/"/g, '""') || ''}"`,
+      post.category || 'Uncategorized',
+      post.status,
+      new Date(post.createdAt).toLocaleDateString(),
+      post.views || 0,
+      post.comments?.length || 0,
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'blog_posts.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'published':
-        return 'var(--success)';
-      case 'draft':
-        return 'var(--warning)';
-      case 'scheduled':
-        return 'var(--info)';
-      default:
-        return 'var(--text-secondary)';
+      case 'published': return 'bg-green-100 text-green-800 border-green-200';
+      case 'draft': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'published':
-        return <Save size={16} />;
-      case 'draft':
-        return <Tag size={16} />;
-      case 'scheduled':
-        return <Clock size={16} />;
-      default:
-        return <Tag size={16} />;
+      case 'published': return <Save size={16} />;
+      case 'draft': return <Tag size={16} />;
+      case 'scheduled': return <Clock size={16} />;
+      default: return <Tag size={16} />;
     }
   };
 
@@ -297,7 +326,7 @@ const ManageBlog = () => {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
 
-        toast.success('Blog post updated sharp sharp!');
+        toast.success('Blog post updated successfully!');
         fetchBlogs();
         onClose();
       } catch (error) {
@@ -320,294 +349,214 @@ const ManageBlog = () => {
       }
     };
 
+    const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200";
+    const labelClass = "block text-sm font-semibold text-gray-700 mb-2";
+
     return (
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="relative">
-          <label
-            className="absolute -top-2 left-4 bg-white px-2 text-sm font-medium transition-all duration-200"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Post Title *
-          </label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            placeholder="Enter a captivating title"
-            className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:scale-[1.01]"
-            style={{
-              borderColor: 'var(--border-light)',
-              color: 'var(--text-primary)',
-              background: 'var(--card-bg)',
-            }}
-            required
-          />
-        </div>
-        <div className="relative">
-          <label
-            className="absolute -top-2 left-4 bg-white px-2 text-sm font-medium transition-all duration-200"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Excerpt
-          </label>
-          <textarea
-            name="excerpt"
-            value={formData.excerpt}
-            onChange={handleInputChange}
-            placeholder="Write a brief summary to engage readers"
-            rows="3"
-            className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none focus:scale-[1.01]"
-            style={{
-              borderColor: 'var(--border-light)',
-              color: 'var(--text-primary)',
-              background: 'var(--card-bg)',
-            }}
-            maxLength={200}
-          />
-          <p className="text-xs text-right mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {formData.excerpt.length}/200
-          </p>
-        </div>
-        <div className="relative">
-          <label
-            className="absolute -top-2 left-4 bg-white px-2 text-sm font-medium transition-all duration-200"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Content *
-          </label>
-          <textarea
-            name="content"
-            value={formData.content}
-            onChange={handleInputChange}
-            placeholder="Write your blog post content here"
-            rows="6"
-            className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none focus:scale-[1.01]"
-            style={{
-              borderColor: 'var(--border-light)',
-              color: 'var(--text-primary)',
-              background: 'var(--card-bg)',
-            }}
-            required
-            maxLength={5000}
-          />
-          <p className="text-xs text-right mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {formData.content.length}/5000
-          </p>
-        </div>
-        <div className="relative">
-          <label
-            className="absolute -top-2 left-4 bg-white px-2 text-sm font-medium transition-all duration-200"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Featured Image
-          </label>
-          {previewImage ? (
-            <div className="relative">
-              <img
-                src={previewImage}
-                alt="Preview"
-                className="w-full h-40 object-cover rounded-lg transition-all duration-200 hover:scale-105"
-                onError={(e) => {
-                  e.target.src = '/placeholder-image.jpg';
-                  setImageErrors((prev) => ({ ...prev, [post._id]: previewImage }));
-                  console.error(`Failed to load edit preview image: ${previewImage}`);
-                }}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className={labelClass}>Post Title *</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              placeholder="Enter a captivating title"
+              className={inputClass}
+              required
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Category</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className={inputClass}
+            >
+              <option value="">Select category</option>
+              <option value="technology">Technology</option>
+              <option value="lifestyle">Lifestyle</option>
+              <option value="business">Business</option>
+              <option value="travel">Travel</option>
+              <option value="food">Food & Cooking</option>
+              <option value="health">Health & Fitness</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className={labelClass}>Excerpt</label>
+            <textarea
+              name="excerpt"
+              value={formData.excerpt}
+              onChange={handleInputChange}
+              placeholder="Write a brief summary to engage readers"
+              rows="3"
+              className={inputClass}
+              maxLength={200}
+            />
+            <p className="text-xs text-gray-500 text-right mt-1">{formData.excerpt.length}/200</p>
+          </div>
+          <div className="md:col-span-2">
+            <label className={labelClass}>Content *</label>
+            <textarea
+              name="content"
+              value={formData.content}
+              onChange={handleInputChange}
+              placeholder="Write your blog post content here"
+              rows="6"
+              className={inputClass}
+              required
+              maxLength={5000}
+            />
+            <p className="text-xs text-gray-500 text-right mt-1">{formData.content.length}/5000</p>
+          </div>
+          <div className="md:col-span-2">
+            <label className={labelClass}>Featured Image</label>
+            {previewImage ? (
+              <div className="relative">
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  className="w-full h-40 object-cover rounded-xl transition-all duration-200 hover:scale-105"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-image.jpg';
+                    setImageErrors((prev) => ({ ...prev, [post._id]: previewImage }));
+                    console.error(`Failed to load edit preview image: ${previewImage}`);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewImage(null);
+                    setImageFile(null);
+                  }}
+                  className="absolute top-2 right-2 p-1 rounded-full bg-gray-800 bg-opacity-70 hover:bg-opacity-90 transition-all duration-200"
+                  aria-label="Remove image"
+                >
+                  <X size={16} className="text-white" />
+                </button>
+              </div>
+            ) : (
+              <label className="block cursor-pointer">
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-yellow-500 bg-gradient-to-br from-yellow-50/10 to-gray-50/10 transition-all duration-200">
+                  <Image size={24} className="mx-auto mb-2 text-yellow-500" />
+                  <p className="text-sm font-medium text-gray-700">Upload an image</p>
+                  <p className="text-xs text-gray-500">JPEG or PNG, max 5MB</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  aria-label="Upload image"
+                />
+              </label>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>Tags</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={currentTag}
+                onChange={(e) => setCurrentTag(e.target.value)}
+                placeholder="Add a tag"
+                className={inputClass}
+                onKeyPress={(e) => e.key === 'Enter' && addTag(e)}
               />
               <button
                 type="button"
-                onClick={() => {
-                  setPreviewImage(null);
-                  setImageFile(null);
-                }}
-                className="absolute top-2 right-2 p-1 rounded-full bg-gray-800 bg-opacity-70 hover:bg-opacity-90 transition-all duration-200 z-10"
-                style={{ color: 'var(--text-white)' }}
-                aria-label="Remove image"
+                onClick={addTag}
+                className="px-4 py-3 bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white rounded-xl transition-all duration-200"
+                aria-label="Add tag"
               >
-                <X size={16} />
+                <Plus size={16} />
               </button>
             </div>
-          ) : (
-            <label className="block cursor-pointer">
-              <div
-                className="border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 hover:border-[var(--primary)] bg-gradient-to-br from-[var(--primary-light)]/10 to-[var(--accent-light)]/10"
-                style={{
-                  borderColor: 'var(--border-light)',
-                }}
-              >
-                <Image size={24} className="mx-auto mb-2" style={{ color: 'var(--primary)' }} />
-                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  Upload an image
-                </p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  JPEG or PNG, max 5MB
-                </p>
-              </div>
-              <input
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={handleImageUpload}
-                className="hidden"
-                aria-label="Upload image"
-              />
-            </label>
-          )}
-        </div>
-        <div className="relative">
-          <label
-            className="absolute -top-2 left-4 bg-white px-2 text-sm font-medium transition-all duration-200"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Category
-          </label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:scale-[1.01]"
-            style={{
-              borderColor: 'var(--border-light)',
-              color: 'var(--text-primary)',
-              background: 'var(--card-bg)',
-            }}
-          >
-            <option value="">Select category</option>
-            <option value="technology">Technology</option>
-            <option value="lifestyle">Lifestyle</option>
-            <option value="business">Business</option>
-            <option value="travel">Travel</option>
-            <option value="food">Food & Cooking</option>
-            <option value="health">Health & Fitness</option>
-          </select>
-        </div>
-        <div className="space-y-2">
-          <label className="block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            Tags
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={currentTag}
-              onChange={(e) => setCurrentTag(e.target.value)}
-              placeholder="Add a tag"
-              className="flex-1 px-4 py-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:scale-[1.01]"
-              style={{
-                borderColor: 'var(--border-light)',
-                color: 'var(--text-primary)',
-                background: 'var(--card-bg)',
-              }}
-              onKeyPress={(e) => e.key === 'Enter' && addTag(e)}
-            />
-            <button
-              type="button"
-              onClick={addTag}
-              className="px-4 py-3 rounded-lg transition-all duration-200 hover:bg-[var(--primary-dark)] min-w-[48px] hover:shadow-md"
-              style={{ background: 'var(--primary)', color: 'var(--text-white)' }}
-              aria-label="Add tag"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {formData.tags.map((tag, index) => (
-              <span
-                key={`tag-${index}-${tag}`}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm"
-                style={{
-                  background: 'var(--accent)',
-                  color: 'var(--text-white)',
-                }}
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => removeTag(tag)}
-                  className="ml-1 p-1 rounded-full hover:bg-[var(--accent-dark)]"
-                  aria-label={`Remove tag ${tag}`}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.tags.map((tag, index) => (
+                <span
+                  key={`tag-${index}-${tag}`}
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
                 >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-1 p-1 rounded-full hover:bg-blue-200"
+                    aria-label={`Remove tag ${tag}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Publication Status</label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+              className={inputClass}
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="scheduled">Scheduled</option>
+            </select>
+            {formData.status === 'scheduled' && (
+              <div className="mt-4">
+                <label className={labelClass}>Schedule Date *</label>
+                <input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  value={formData.scheduledAt}
+                  onChange={handleInputChange}
+                  className={inputClass}
+                  min={new Date().toISOString().slice(0, 16)}
+                  required={formData.status === 'scheduled'}
+                />
+              </div>
+            )}
+            <label className="flex items-center gap-2 mt-4">
+              <input
+                type="checkbox"
+                name="featured"
+                checked={formData.featured}
+                onChange={handleInputChange}
+                className="w-4 h-4 rounded border-gray-200 focus:ring-yellow-500"
+              />
+              <span className="text-sm text-gray-700">Featured Post</span>
+            </label>
           </div>
         </div>
-        <div className="space-y-2">
-          <label className="block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            Publication Status
-          </label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:scale-[1.01]"
-            style={{
-              borderColor: 'var(--border-light)',
-              color: 'var(--text-primary)',
-              background: 'var(--card-bg)',
-            }}
+        <div className="flex gap-4 pt-4">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="scheduled">Scheduled</option>
-          </select>
-          {formData.status === 'scheduled' && (
-            <div className="relative">
-              <label
-                className="absolute -top-2 left-4 bg-white px-2 text-sm font-medium transition-all duration-200"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Schedule Date *
-              </label>
-              <input
-                type="datetime-local"
-                name="scheduledAt"
-                value={formData.scheduledAt}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:scale-[1.01]"
-                style={{
-                  borderColor: 'var(--border-light)',
-                  color: 'var(--text-primary)',
-                  background: 'var(--card-bg)',
-                }}
-                min={new Date().toISOString().slice(0, 16)}
-                required={formData.status === 'scheduled'}
-              />
-            </div>
-          )}
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="featured"
-              checked={formData.featured}
-              onChange={handleInputChange}
-              className="w-4 h-4 rounded border-[var(--border-light)] focus:ring-[var(--primary)]"
-            />
-            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-              Featured Post
-            </span>
-          </label>
+            {isSubmitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={18} />
+                Save Changes
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+          >
+            Cancel
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 hover:bg-[var(--primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[var(--primary)]/20"
-          style={{
-            background: 'var(--primary)',
-            color: 'var(--text-white)',
-          }}
-        >
-          {isSubmitting ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save size={16} />
-              Save Changes
-            </>
-          )}
-        </button>
       </form>
     );
   };
@@ -625,7 +574,7 @@ const ManageBlog = () => {
       setIsSubmittingComment(true);
       try {
         await axiosInstance.post(`/blogs/${post._id}/comments`, { text: commentText });
-        toast.success('Comment added sharp sharp!');
+        toast.success('Comment added successfully!');
         setCommentText('');
         fetchBlogs();
       } catch (error) {
@@ -640,7 +589,7 @@ const ManageBlog = () => {
       if (!window.confirm('Are you sure you want to delete this comment?')) return;
       try {
         await axiosInstance.delete(`/blogs/${post._id}/comments/${commentId}`);
-        toast.success('Comment deleted sharp sharp!');
+        toast.success('Comment deleted successfully!');
         fetchBlogs();
       } catch (error) {
         console.error('Delete comment error:', error.response?.data || error.message);
@@ -649,13 +598,34 @@ const ManageBlog = () => {
     };
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-yellow-50 to-yellow-50 rounded-2xl border border-gray-100">
+          <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-yellow-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">
+            {post.title?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-2xl font-bold text-gray-900">{post.title || 'Untitled'}</h3>
+            <p className="text-gray-600 flex items-center gap-2">
+              <Tag size={16} />
+              {post.category || 'Uncategorized'}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setViewPost(null);
+              setEditPost(post);
+            }}
+            className="bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-xl border shadow-sm transition-all duration-200"
+          >
+            <Edit size={18} />
+          </button>
+        </div>
         {post.image ? (
-          <div className="mb-4 rounded-lg overflow-hidden relative">
+          <div className="mb-4 rounded-xl overflow-hidden relative">
             <img
               src={`${STATIC_BASE_URL}${post.image}`}
               alt={post.title || 'Post'}
-              className="w-full h-40 object-cover rounded-lg transition-all duration-200 hover:scale-105"
+              className="w-full h-48 object-cover rounded-xl transition-all duration-200 hover:scale-105"
               onError={(e) => {
                 e.target.src = '/placeholder-image.jpg';
                 setImageErrors((prev) => ({
@@ -667,39 +637,82 @@ const ManageBlog = () => {
             />
           </div>
         ) : (
-          <div className="rounded-lg p-6 text-center bg-gradient-to-br from-[var(--primary-light)]/10 to-[var(--accent-light)]/10">
-            <Image size={24} style={{ color: 'var(--text-secondary)' }} />
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No image available</p>
+          <div className="rounded-xl p-6 text-center bg-gradient-to-br from-yellow-50/10 to-gray-50/10">
+            <Image size={24} className="mx-auto mb-2 text-gray-500" />
+            <p className="text-sm text-gray-600">No image available</p>
           </div>
         )}
-        <div className="space-y-3">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            {post.title || 'Untitled'}
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {post.excerpt || 'No excerpt available'}
-          </p>
-          <div className="prose max-w-none" style={{ color: 'var(--text-primary)' }}>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">{post.excerpt || 'No excerpt available'}</p>
+          <div className="prose max-w-none text-gray-900">
             {(post.content || '').split('\n').map((paragraph, index) => (
               <p key={`content-${index}`} className="mb-3 text-sm">
                 {paragraph || <br />}
               </p>
             ))}
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-            <span>{post.category || 'Uncategorized'}</span>
-            <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'No date'}</span>
-            <span>{post.views || 0} views</span>
-            <span>{post.comments?.length || 0} comments</span>
-            <span>By {post.author?.name || 'Unknown'}</span>
-            {post.status === 'scheduled' && post.scheduledAt && (
-              <span>Scheduled for {new Date(post.scheduledAt).toLocaleString()}</span>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Tag size={18} className="text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Category</p>
+                  <p className="font-semibold text-gray-900">{post.category || 'Uncategorized'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <Clock size={18} className="text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Created At</p>
+                  <p className="font-semibold text-gray-900">
+                    {post.createdAt ? new Date(post.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    }) : 'No date'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Eye size={18} className="text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Views</p>
+                  <p className="font-semibold text-gray-900">{post.views || 0}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <MessageCircle size={18} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Comments</p>
+                  <p className="font-semibold text-gray-900">{post.comments?.length || 0}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Status</p>
+              <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(post.status)}`}>
+                {post.status ? post.status.charAt(0).toUpperCase() + post.status.slice(1) : 'Unknown'}
+              </span>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Author</p>
+              <p className="font-semibold text-gray-900">{post.author?.name || 'Unknown'}</p>
+            </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-lg font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-              Comments
-            </h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-3">Comments</h3>
             <form onSubmit={handleCommentSubmit} className="mb-4">
               <div className="flex gap-2">
                 <textarea
@@ -707,19 +720,13 @@ const ManageBlog = () => {
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Add a comment..."
                   rows={2}
-                  className="flex-1 px-4 py-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none focus:scale-[1.01]"
-                  style={{
-                    borderColor: 'var(--border-light)',
-                    color: 'var(--text-primary)',
-                    background: 'var(--card-bg)',
-                  }}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                   maxLength={500}
                 />
                 <button
                   type="submit"
                   disabled={isSubmittingComment}
-                  className="px-4 py-2 rounded-lg transition-all duration-200 hover:bg-[var(--primary-dark)] disabled:opacity-50 min-w-[80px] hover:shadow-md"
-                  style={{ background: 'var(--primary)', color: 'var(--text-white)' }}
+                  className="px-4 py-3 bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white rounded-xl transition-all duration-200 disabled:opacity-50"
                 >
                   {isSubmittingComment ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -728,38 +735,29 @@ const ManageBlog = () => {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-right mt-1" style={{ color: 'var(--text-secondary)' }}>
-                {commentText.length}/500
-              </p>
+              <p className="text-xs text-gray-500 text-right mt-1">{commentText.length}/500</p>
             </form>
             {post.comments?.length > 0 ? (
               <div className="space-y-3">
                 {post.comments.map((comment, index) => (
                   <div
                     key={`comment-${comment._id || index}`}
-                    className="flex items-start gap-3 p-3 rounded-lg border transition-all duration-200 hover:bg-[var(--card-bg)]/80"
-                    style={{
-                      borderColor: 'var(--border-light)',
-                      background: 'var(--card-bg)',
-                    }}
+                    className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50 transition-all duration-200 hover:bg-gray-100"
                   >
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        <span className="font-semibold text-sm text-gray-900">
                           {comment.user?.user?.name || comment.user?.name || 'Anonymous'}
                         </span>
-                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <span className="text-xs text-gray-500">
                           {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : 'No date'}
                         </span>
                       </div>
-                      <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                        {comment.text || 'No comment text'}
-                      </p>
+                      <p className="text-sm text-gray-900">{comment.text || 'No comment text'}</p>
                     </div>
                     <button
                       onClick={() => handleCommentDelete(comment._id)}
-                      className="p-1 rounded-full hover:bg-red-100 transition-all duration-200 flex-shrink-0 z-10"
-                      style={{ color: 'red' }}
+                      className="p-1 rounded-full hover:bg-red-100 text-red-600 transition-all duration-200"
                       aria-label="Delete comment"
                     >
                       <X size={14} />
@@ -768,9 +766,7 @@ const ManageBlog = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                No comments yet
-              </p>
+              <p className="text-sm text-gray-600">No comments yet</p>
             )}
           </div>
         </div>
@@ -779,7 +775,7 @@ const ManageBlog = () => {
   };
 
   const SkeletonCard = () => (
-    <div className="rounded-xl p-6 border shadow-lg bg-[var(--card-bg)] animate-pulse flex flex-col">
+    <div className="rounded-2xl p-6 border border-gray-100 shadow-sm bg-white animate-pulse flex flex-col">
       <div className="mb-4 rounded-xl bg-gray-200 h-48"></div>
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <div className="h-6 w-20 bg-gray-200 rounded-full"></div>
@@ -787,152 +783,129 @@ const ManageBlog = () => {
       </div>
       <div className="h-6 w-3/4 bg-gray-200 rounded mb-2"></div>
       <div className="h-4 w-full bg-gray-200 rounded mb-4"></div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
-          <div className="h-4 w-16 bg-gray-200 rounded"></div>
-          <div className="h-4 w-12 bg-gray-200 rounded"></div>
-        </div>
-      </div>
       <div className="flex gap-2 flex-wrap mt-auto">
-        <div className="h-10 w-24 bg-gray-200 rounded-lg"></div>
-        <div className="h-10 w-24 bg-gray-200 rounded-lg"></div>
-        <div className="h-10 w-24 bg-gray-200 rounded-lg"></div>
+        <div className="h-10 w-24 bg-gray-200 rounded-xl"></div>
+        <div className="h-10 w-24 bg-gray-200 rounded-xl"></div>
+        <div className="h-10 w-24 bg-gray-200 rounded-xl"></div>
       </div>
     </div>
   );
 
+  const stats = {
+    total: blogPosts.length,
+    published: blogPosts.filter(p => p.status === 'published').length,
+    draft: blogPosts.filter(p => p.status === 'draft').length,
+    thisMonth: blogPosts.filter(p => new Date(p.createdAt).getMonth() === new Date().getMonth()).length
+  };
+
   return (
     <ErrorBoundary>
-      <div className="min-h-screen pt-16 md:pt-4 bg-gradient-to-br from-[var(--bg-light)] via-[var(--primary-light)]/20 to-[var(--accent-light)]/20 overflow-hidden">
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-5" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23${(colors.primary || '#FF5733').replace('#', '')}' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}></div>
-        </div>
-        <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-          <div
-            className="bg-[var(--glass-bg)] backdrop-blur-lg rounded-xl shadow-lg border p-6 sm:p-8 mb-6 sticky top-4 z-20"
-            style={{ borderColor: 'var(--border-light)' }}
-          >
-            <h1 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-              Manage Blog Posts
-            </h1>
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <input
-                    type="text"
-                    id="search"
-                    placeholder="Search posts..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] peer"
-                    style={{
-                      borderColor: 'var(--border-light)',
-                      color: 'var(--text-primary)',
-                      background: 'var(--card-bg)',
-                    }}
-                  />
-                  <label
-                    htmlFor="search"
-                    className="absolute -top-2 left-4 bg-[var(--card-bg)] px-2 text-sm font-medium transition-all duration-200 peer-focus:text-[var(--primary)]"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Search
-                  </label>
-                </div>
-                <div className="relative flex-1 sm:w-40">
-                  <select
-                    id="filter"
-                    value={selectedFilter}
-                    onChange={(e) => setSelectedFilter(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] peer"
-                    style={{
-                      borderColor: 'var(--border-light)',
-                      color: 'var(--text-primary)',
-                      background: 'var(--card-bg)',
-                    }}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
-                    <option value="scheduled">Scheduled</option>
-                  </select>
-                  <label
-                    htmlFor="filter"
-                    className="absolute -top-2 left-4 bg-[var(--card-bg)] px-2 text-sm font-medium transition-all duration-200 peer-focus:text-[var(--primary)]"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Status
-                  </label>
-                </div>
-                <div className="relative flex-1 sm:w-40">
-                  <select
-                    id="sort"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] peer"
-                    style={{
-                      borderColor: 'var(--border-light)',
-                      color: 'var(--text-primary)',
-                      background: 'var(--card-bg)',
-                    }}
-                  >
-                    <option value="date">Sort by Date</option>
-                    <option value="title">Sort by Title</option>
-                    <option value="views">Sort by Views</option>
-                  </select>
-                  <label
-                    htmlFor="sort"
-                    className="absolute -top-2 left-4 bg-[var(--card-bg)] px-2 text-sm font-medium transition-all duration-200 peer-focus:text-[var(--primary)]"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Sort
-                  </label>
-                </div>
+      <div className="min-h-screen bg-gray-50">
+        <ToastContainer position="top-right" autoClose={3000} />
+        <div className="max-w-7xl mx-auto p-6 space-y-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900">Blog Post Management</h1>
+              <p className="text-lg text-gray-600 mt-2">Manage and monitor your blog posts</p>
+            </div>
+            <button
+              onClick={() => navigate('/create-blog')}
+              className="bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+            >
+              <Plus size={20} />
+              New Post
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatsCard
+              title="Total Posts"
+              value={stats.total}
+              icon={FileText}
+              trend={10}
+            />
+            <StatsCard
+              title="Published Posts"
+              value={stats.published}
+              icon={Save}
+              trend={5}
+            />
+            <StatsCard
+              title="Drafts"
+              value={stats.draft}
+              icon={Tag}
+              trend={-2}
+            />
+            <StatsCard
+              title="This Month"
+              value={stats.thisMonth}
+              icon={Calendar}
+              trend={15}
+            />
+          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search posts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-all duration-200 border hover:bg-[var(--primary-light)]/20 ${viewMode === 'grid' ? 'bg-[var(--primary-light)] text-[var(--text-white)]' : 'bg-[var(--card-bg)]'
-                    }`}
-                  style={{ borderColor: 'var(--border-light)' }}
-                  aria-label="Grid view"
+              <div className="md:flex items-center gap-4">
+                <select
+                  value={selectedFilter}
+                  onChange={(e) => setSelectedFilter(e.target.value)}
+                  className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 >
-                  <Grid size={18} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-all duration-200 border hover:bg-[var(--primary-light)]/20 ${viewMode === 'list' ? 'bg-[var(--primary-light)] text-[var(--text-white)]' : 'bg-[var(--card-bg)]'
-                    }`}
-                  style={{ borderColor: 'var(--border-light)' }}
-                  aria-label="List view"
+                  <option value="all">All Statuses</option>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                  <option value="scheduled">Scheduled</option>
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 >
-                  <List size={18} />
+                  <option value="date">Sort by Date</option>
+                  <option value="title">Sort by Title</option>
+                  <option value="views">Sort by Views</option>
+                </select>
+                <button
+                  onClick={exportToCSV}
+                  className="bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white font-semibold px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-2"
+                >
+                  <Download size={16} />
+                  Export
                 </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-xl border border-gray-200 hover:bg-yellow-50 ${viewMode === 'grid' ? 'bg-yellow-100' : ''} transition-all duration-200`}
+                    aria-label="Grid view"
+                  >
+                    <Grid size={18} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-xl border border-gray-200 hover:bg-yellow-50 ${viewMode === 'list' ? 'bg-yellow-100' : ''} transition-all duration-200`}
+                    aria-label="List view"
+                  >
+                    <List size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
           {error ? (
-            <div className="text-center py-8">
+            <div className="bg-white rounded-2xl p-16 text-center">
               <p className="text-lg text-red-600">{error}</p>
               <button
                 onClick={fetchBlogs}
-                className="mt-4 px-6 py-2 rounded-lg transition-all duration-200 hover:bg-[var(--primary-dark)] hover:shadow-md"
-                style={{ background: 'var(--primary)', color: 'var(--text-white)' }}
-                aria-label="Retry fetching posts"
+                className="mt-4 bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white px-6 py-3 rounded-xl transition-all duration-200"
               >
                 Retry
               </button>
@@ -944,36 +917,32 @@ const ManageBlog = () => {
               ))}
             </div>
           ) : blogPosts.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-                No blog posts found
-              </p>
+            <div className="bg-white rounded-2xl p-16 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-yellow-500 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                <FileText size={32} className="text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No blog posts found</h3>
+              <p className="text-gray-600 mb-6">Get started by creating your first post</p>
               <button
-                onClick={fetchBlogs}
-                className="mt-4 px-6 py-2 rounded-lg transition-all duration-200 hover:bg-[var(--primary-dark)] hover:shadow-md"
-                style={{ background: 'var(--primary)', color: 'var(--text-white)' }}
-                aria-label="Retry fetching posts"
+                onClick={() => navigate('/create-blog')}
+                className="bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white px-6 py-3 rounded-xl transition-all duration-200"
               >
-                Retry
+                Create New Post
               </button>
             </div>
           ) : (
-            <div
-              className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}
-            >
+            <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
               {blogPosts.map((post, index) => (
                 <div
                   key={post._id || `post-${index}`}
-                  className="group rounded-xl p-5 border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:rotate-1 bg-[var(--card-bg)] flex flex-col animate-fade-in"
-                  style={{ borderColor: 'var(--border-light)', animationDelay: `${index * 100}ms` }}
+                  className="group rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-white flex flex-col"
                 >
-                  <div className="absolute inset-0 border-2 border-transparent group-hover:border-[var(--primary)]/50 rounded-xl transition-all duration-300 z-0"></div>
                   {post.image ? (
-                    <div className="mb-3 rounded-lg overflow-hidden relative">
+                    <div className="mb-4 rounded-xl overflow-hidden relative">
                       <img
                         src={`${STATIC_BASE_URL}${post.image}`}
                         alt={post.title || 'Post'}
-                        className="w-full h-40 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
                           if (!imageErrors[post._id]) {
                             e.target.src = '/placeholder-image.jpg';
@@ -987,38 +956,27 @@ const ManageBlog = () => {
                       />
                     </div>
                   ) : (
-                    <div className="mb-3 rounded-lg flex items-center justify-center h-40 bg-gradient-to-br from-[var(--primary-light)]/10 to-[var(--accent-light)]/10">
-                      <Image size={24} style={{ color: 'var(--text-secondary)' }} />
+                    <div className="mb-4 rounded-xl flex items-center justify-center h-40 bg-gradient-to-br from-yellow-50/10 to-gray-50/10">
+                      <Image size={24} className="text-gray-500" />
                     </div>
                   )}
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span
-                      className="inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium"
-                      style={{ background: getStatusColor(post.status), color: 'var(--text-white)' }}
-                    >
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(post.status)}`}>
                       {getStatusIcon(post.status)}
                       {post.status ? post.status.charAt(0).toUpperCase() + post.status.slice(1) : 'Unknown'}
                     </span>
                     {post.featured && (
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                        style={{ background: 'var(--accent)', color: 'var(--text-white)' }}
-                      >
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border-purple-200">
                         Featured
                       </span>
                     )}
                   </div>
-                  <h3
-                    className="font-bold mb-2 text-base group-hover:text-[var(--primary)] transition-colors duration-200 line-clamp-2"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
+                  <h3 className="font-bold text-lg mb-2 text-gray-900 group-hover:text-yellow-600 transition-colors duration-200 line-clamp-2">
                     {post.title || 'Untitled'}
                   </h3>
-                  <p className="text-xs mb-3 line-clamp-2 flex-grow" style={{ color: 'var(--text-secondary)' }}>
-                    {post.excerpt || 'No excerpt available'}
-                  </p>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">{post.excerpt || 'No excerpt available'}</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
                       <span>By {post.author?.name || 'Unknown'}</span>
                       <span>{post.views || 0} views</span>
                       <span>{post.comments?.length || 0} comments</span>
@@ -1028,8 +986,7 @@ const ManageBlog = () => {
                     <div className="flex gap-2 flex-wrap mt-auto">
                       <button
                         onClick={() => setViewPost(post)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-[var(--primary-dark)] min-w-[100px] hover:shadow-md z-10"
-                        style={{ background: 'var(--primary)', color: 'var(--text-white)' }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white transition-all duration-200"
                         aria-label={`View post ${post.title || 'Untitled'}`}
                       >
                         <Eye size={14} />
@@ -1037,8 +994,7 @@ const ManageBlog = () => {
                       </button>
                       <button
                         onClick={() => setEditPost(post)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-[var(--info-dark)] min-w-[100px] hover:shadow-md z-10"
-                        style={{ background: 'var(--info)', color: 'var(--text-white)' }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-600 hover:to-blue-600 text-white transition-all duration-200"
                         aria-label={`Edit post ${post.title || 'Untitled'}`}
                       >
                         <Edit size={14} />
@@ -1046,29 +1002,26 @@ const ManageBlog = () => {
                       </button>
                       <button
                         onClick={() => handleDelete(post._id)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-red-600 min-w-[100px] hover:shadow-md z-10"
-                        style={{ background: 'red', color: 'var(--text-white)' }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-500 hover:from-red-600 hover:to-red-600 text-white transition-all duration-200"
                         aria-label={`Delete post ${post.title || 'Untitled'}`}
                       >
-                        <Trash size={14} />
+                        <Trash2 size={14} />
                         Delete
                       </button>
                     </div>
                   ) : (
                     <div className="relative mt-auto">
                       <button
-                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-[var(--primary-dark)] w-full hover:shadow-md z-10"
-                        style={{ background: 'var(--primary)', color: 'var(--text-white)' }}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white w-full transition-all duration-200"
                         aria-label="Open post actions"
                       >
                         <Menu size={14} />
                         Actions
                       </button>
-                      <div className="absolute bottom-full left-0 w-full bg-[var(--card-bg)] rounded-lg shadow-lg border border-[var(--border-light)] opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-2 transition-all duration-200 z-20">
+                      <div className="absolute bottom-full left-0 w-full bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-2 transition-all duration-200 z-20">
                         <button
                           onClick={() => setViewPost(post)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-[var(--primary-light)]/20 transition-all duration-200"
-                          style={{ color: 'var(--text-primary)' }}
+                          className="flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-yellow-50 text-gray-900 transition-all duration-200"
                           aria-label={`View post ${post.title || 'Untitled'}`}
                         >
                           <Eye size={14} />
@@ -1076,8 +1029,7 @@ const ManageBlog = () => {
                         </button>
                         <button
                           onClick={() => setEditPost(post)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-[var(--info-light)]/20 transition-all duration-200"
-                          style={{ color: 'var(--text-primary)' }}
+                          className="flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-blue-50 text-gray-900 transition-all duration-200"
                           aria-label={`Edit post ${post.title || 'Untitled'}`}
                         >
                           <Edit size={14} />
@@ -1085,11 +1037,10 @@ const ManageBlog = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(post._id)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-red-100 transition-all duration-200"
-                          style={{ color: 'red' }}
+                          className="flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-red-50 text-red-600 transition-all duration-200"
                           aria-label={`Delete post ${post.title || 'Untitled'}`}
                         >
-                          <Trash size={14} />
+                          <Trash2 size={14} />
                           Delete
                         </button>
                       </div>
@@ -1099,42 +1050,14 @@ const ManageBlog = () => {
               ))}
             </div>
           )}
-          <Modal isOpen={!!editPost} onClose={() => setEditPost(null)} title="Edit Blog Post">
+          <Modal isOpen={!!editPost} onClose={() => setEditPost(null)} title="Edit Blog Post" size="large">
             {editPost && <EditPostForm post={editPost} onClose={() => setEditPost(null)} />}
           </Modal>
-          <Modal isOpen={!!viewPost} onClose={() => setViewPost(null)} title="View Blog Post">
+          <Modal isOpen={!!viewPost} onClose={() => setViewPost(null)} title="View Blog Post" size="large">
             {viewPost && <ViewPost post={viewPost} onClose={() => setViewPost(null)} />}
           </Modal>
         </div>
       </div>
-      <style jsx>{`
-        @keyframes slide-in {
-          from {
-            transform: translateY(20px) scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-          }
-        }
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out forwards;
-        }
-      `}</style>
     </ErrorBoundary>
   );
 };

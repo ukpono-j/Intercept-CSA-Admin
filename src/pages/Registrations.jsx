@@ -90,7 +90,7 @@ const RegistrationForm = ({ registration, onClose, onSuccess }) => {
     }
   };
 
-  const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200";
+  const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200";
   const labelClass = "block text-sm font-semibold text-gray-700 mb-2";
 
   return (
@@ -182,7 +182,7 @@ const RegistrationForm = ({ registration, onClose, onSuccess }) => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         >
           {isSubmitting ? (
             <>
@@ -223,7 +223,7 @@ const ViewRegistration = ({ registration, onClose, onEdit }) => {
     switch (pkg) {
       case 'Enterprise': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'Premium': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Standard': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'Standard': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -231,8 +231,8 @@ const ViewRegistration = ({ registration, onClose, onEdit }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-orange-50 to-rose-50 rounded-2xl border">
-        <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-rose-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">
+      <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-yellow-50 to-yellow-50 rounded-2xl border">
+        <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-yellow-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">
           {registration.name.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1">
@@ -288,8 +288,8 @@ const ViewRegistration = ({ registration, onClose, onEdit }) => {
           </div>
           
           <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Calendar size={18} className="text-orange-600" />
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Calendar size={18} className="text-yellow-600" />
             </div>
             <div>
               <p className="text-sm text-gray-500">Join Date</p>
@@ -431,7 +431,7 @@ const Registrations = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="registrations min-h-screen bg-gray-50">
       <ToastContainer position="top-right" />
       
       {/* Modals */}
@@ -442,6 +442,7 @@ const Registrations = () => {
           setShowCreateForm(false);
         }}
         title={selectedRegistration ? 'Edit User' : 'Create New User'}
+        size="large"
       >
         <RegistrationForm
           registration={selectedRegistration}
@@ -477,9 +478,9 @@ const Registrations = () => {
             <h1 className="text-4xl font-bold text-gray-900">User Management</h1>
             <p className="text-lg text-gray-600 mt-2">Manage and monitor your registered users</p>
           </div>
-          <button
+        <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+            className="bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
           >
             <Plus size={20} />
             New User
@@ -492,28 +493,28 @@ const Registrations = () => {
             title="Total Users" 
             value={stats.total} 
             icon={Users} 
-            color="bg-gradient-to-r from-blue-500 to-blue-600"
+          color="stats-icon"
             trend={12}
           />
           <StatsCard 
             title="Active Users" 
             value={stats.active} 
             icon={UserPlus} 
-            color="bg-gradient-to-r from-green-500 to-green-600"
+           color="stats-icon"
             trend={8}
           />
           <StatsCard 
             title="Pending" 
             value={stats.pending} 
             icon={AlertCircle} 
-            color="bg-gradient-to-r from-yellow-500 to-yellow-600"
+            color="stats-icon"
             trend={-3}
           />
           <StatsCard 
             title="This Month" 
             value={stats.thisMonth} 
             icon={Calendar} 
-            color="bg-gradient-to-r from-purple-500 to-purple-600"
+            color="stats-icon"
             trend={15}
           />
         </div>
@@ -522,13 +523,13 @@ const Registrations = () => {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+           <input
                 type="text"
                 placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
               />
             </div>
             
@@ -536,7 +537,7 @@ const Registrations = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="filter-select"
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -547,7 +548,7 @@ const Registrations = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+               className="filter-select"
               >
                 <option value="createdAt">Sort by Join Date</option>
                 <option value="name">Sort by Name</option>
@@ -555,7 +556,7 @@ const Registrations = () => {
               
               <button
                 onClick={exportToCSV}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-2"
+               className="export-button flex items-center gap-2"
               >
                 <Download size={16} />
                 Export
@@ -567,19 +568,19 @@ const Registrations = () => {
         {/* Content */}
         {isLoading ? (
           <div className="bg-white rounded-2xl p-16 text-center">
-            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-lg text-gray-600">Loading users...</p>
           </div>
         ) : registrations.length === 0 ? (
           <div className="bg-white rounded-2xl p-16 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-rose-500 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-yellow-500 rounded-2xl mx-auto mb-6 flex items-center justify-center">
               <Users size={32} className="text-white" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No users found</h3>
             <p className="text-gray-600 mb-6">Get started by creating your first user</p>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white px-6 py-3 rounded-xl transition-all duration-200"
+              className="bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white px-6 py-3 rounded-xl transition-all duration-200"
             >
               Create New User
             </button>
@@ -603,7 +604,7 @@ const Registrations = () => {
                     <tr key={reg._id} className="hover:bg-gray-50 transition-colors">
                       <td className="p-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-rose-500 rounded-xl flex items-center justify-center text-white font-bold">
+                          <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-500 rounded-xl flex items-center justify-center text-white font-bold">
                             {reg.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -648,7 +649,7 @@ const Registrations = () => {
                           </button>
                           <button
                             onClick={() => setSelectedRegistration(reg)}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
                             title="Edit User"
                           >
                             <Edit size={16} />

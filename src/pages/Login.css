@@ -1,0 +1,63 @@
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login {
+    padding: 5rem 1rem; /* Matches Contact section padding */
+  }
+  .login .max-w-md {
+    max-width: 20rem; /* Slightly narrower for mobile */
+  }
+  .login .text-2xl {
+    font-size: 2rem; /* Matches Contact title at 768px */
+  }
+  .login .text-sm {
+    font-size: 0.875rem; /* Matches Contact secondary text */
+  }
+  .login .p-6 {
+    padding: 1.5rem; /* Matches Contact card padding */
+  }
+  .login .py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  .login .px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .login button {
+    font-size: 1rem; /* Matches Contact button text */
+    padding: 1rem 1.5rem; /* Matches Contact button padding */
+    min-width: 200px; /* Matches Contact button */
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+}
+
+@media (max-width: 640px) {
+  .login {
+    padding: 5rem 0.75rem; /* Matches Contact section padding */
+  }
+  .login .max-w-md {
+    max-width: 18rem; /* Even narrower for small screens */
+  }
+  .login .text-2xl {
+    font-size: 1.75rem; /* Matches Contact title at 640px */
+  }
+  .login .text-sm {
+    font-size: 0.75rem; /* Matches Contact secondary text at 640px */
+  }
+  .login .p-6 {
+    padding: 1rem; /* Matches Contact card padding */
+  }
+  .login .py-3 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .login .px-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .login button {
+    font-size: 0.9375rem; /* Matches Contact button text at 640px */
+    padding: 1rem 1.5rem;
+    min-width: 180px; /* Matches Contact button */
+  }
+}

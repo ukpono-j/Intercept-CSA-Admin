@@ -1,25 +1,141 @@
-import { useState, useEffect } from 'react';
-import { FileTextIcon, ClockIcon, UsersIcon, XIcon, CheckIcon } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FileText, Clock, Users, X, Check, Search, Download, TrendingUp } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import axiosInstance from '../utils/axios';
-import colors from '../utils/colors';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Backend base URLs from environment variables
+const API_BASE_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    console.error('ShowReports ErrorBoundary caught an error:', error);
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 text-center bg-white rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-xl font-semibold text-red-600">Something went wrong</h2>
+          <p className="text-sm text-gray-600">{this.state.error?.message || 'Unknown error'}</p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="mt-4 px-4 py-2 rounded-xl bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all duration-200"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Reusable Modal Component (Aligned with ManageBlog)
+const Modal = ({ isOpen, onClose, title, children, size = 'default' }) => {
+  if (!isOpen) return null;
+
+  const sizeClasses = {
+    small: 'max-w-md',
+    default: 'max-w-2xl',
+    large: 'max-w-4xl'
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className={`bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden transform animate-in zoom-in-95 duration-200`}>
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-slate-50 to-gray-50">
+          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close modal"
+          >
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Stats Card Component (Aligned with ManageBlog)
+const StatsCard = ({ title, value, icon: Icon, trend }) => (
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-600">{title}</p>
+        <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+        {trend && (
+          <p className={`text-sm mt-2 flex items-center gap-1 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <TrendingUp size={14} />
+            {trend > 0 ? '+' : ''}{trend}% this month
+          </p>
+        )}
+      </div>
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-r from-yellow-500 to-yellow-500">
+        <Icon size={28} className="text-white" />
+      </div>
+    </div>
+  </div>
+);
 
 const ShowReports = () => {
   const [reports, setReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
   const REPORTS_PER_PAGE = 10;
-  const MIN_REPORTS_FOR_PAGINATION = 20;
   const [stats, setStats] = useState({
     totalReports: 0,
     anonymousReports: 0,
     pendingReports: 0,
   });
 
+  // Debounced fetchReports
+  const fetchReports = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance.get('/reports', {
+        params: { search: searchTerm },
+      });
+      const reportsData = Array.isArray(response.data) ? response.data : [];
+      setReports(reportsData);
+      setStats({
+        totalReports: reportsData.length,
+        anonymousReports: reportsData.filter(report => report.isAnonymous).length,
+        pendingReports: reportsData.filter(report => report.status === 'pending').length,
+      });
+    } catch (error) {
+      console.error('Fetch reports error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      const errorMessage =
+        error.response?.status === 408
+          ? 'Request timed out while fetching reports. Please try again.'
+          : error.response?.data?.message || 'Failed to fetch reports';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchTerm]);
+
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [fetchReports]);
 
   // Handle body scroll when modal is open/closed
   useEffect(() => {
@@ -33,38 +149,41 @@ const ShowReports = () => {
     };
   }, [selectedReport]);
 
-  const fetchReports = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axiosInstance.get('/reports');
-      const reportsData = response.data;
-
-      setStats({
-        totalReports: reportsData.length,
-        anonymousReports: reportsData.filter(report => report.isAnonymous).length,
-        pendingReports: reportsData.filter(report => report.status === 'pending').length,
-      });
-
-      setReports(reportsData);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch reports');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const markReportAsRead = async (reportId) => {
     try {
-      const response = await axiosInstance.patch(`/reports/${reportId}/read`);
+      await axiosInstance.patch(`/reports/${reportId}/read`);
       setReports(reports.map(report =>
         report._id === reportId ? { ...report, isRead: true } : report
       ));
+      toast.success('Report marked as read');
     } catch (error) {
-      toast.error('Failed to mark report as read');
+      console.error('Mark report as read error:', error.response?.data || error.message);
+      toast.error(error.response?.data?.message || 'Failed to mark report as read');
     }
   };
 
+  const exportToCSV = () => {
+    const headers = ['ID', 'Name', 'Email', 'Message', 'Anonymous', 'Status', 'Created At'];
+    const rows = reports.map((report) => [
+      report._id || 'N/A',
+      report.isAnonymous ? 'Anonymous' : report.name || 'Unknown',
+      report.isAnonymous ? 'N/A' : report.email || 'N/A',
+      `"${report.message?.replace(/"/g, '""') || ''}"`,
+      report.isAnonymous ? 'Yes' : 'No',
+      report.status || 'Unknown',
+      new Date(report.createdAt).toLocaleString(),
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'reports.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   const formatTimeAgo = (date) => {
+    if (!date) return 'No date';
     const now = new Date();
     const seconds = Math.floor((now - new Date(date)) / 1000);
     if (seconds < 60) return `${seconds} seconds ago`;
@@ -72,10 +191,15 @@ const ShowReports = () => {
     if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    return new Date(date).toLocaleDateString();
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   const formatFullDate = (date) => {
+    if (!date) return 'No date';
     return new Date(date).toLocaleString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -87,52 +211,13 @@ const ShowReports = () => {
     });
   };
 
-  const StatCard = ({ icon: Icon, title, value, color }) => (
-    <div className="relative group-2">
-      <div className={`absolute inset-0 bg-gradient-to-r ${color} opacity-10 rounded-2xl blur-xl group-2-hover:opacity-20 transition-opacity duration-300`}></div>
-      <div
-        className="relative bg-white/80 backdrop-blur-lg rounded-2xl p-4 sm:p-6 shadow-lg border border-[var(--border-light)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in"
-        style={{ background: 'var(--card-bg)' }}
-      >
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <div className={`text-xl sm:text-2xl bg-gradient-to-r ${color} p-2 sm:p-3 rounded-xl shadow-md`}>
-            <Icon size={18} sm:size={20} style={{ color: 'var(--text-white)' }} />
-          </div>
-        </div>
-        <div className="text-xl sm:text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {isLoading ? (
-            <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            value
-          )}
-        </div>
-        <div className="text-xs sm:text-sm font-medium text-left" style={{ color: 'var(--text-secondary)' }}>
-          {title}
-        </div>
-      </div>
-    </div>
-  );
-
-  const handleReportClick = (report) => {
-    setSelectedReport(report);
-    if (!report.isRead) {
-      markReportAsRead(report._id);
-    }
-  };
-
-  const closeModal = () => {
-    setSelectedReport(null);
-  };
-
   // Pagination logic
-  const isPaginationEnabled = reports.length >= MIN_REPORTS_FOR_PAGINATION;
-  const totalPages = isPaginationEnabled ? Math.ceil(reports.length / REPORTS_PER_PAGE) : 1;
-  const startIndex = isPaginationEnabled ? (currentPage - 1) * REPORTS_PER_PAGE : 0;
-  const endIndex = isPaginationEnabled ? startIndex + REPORTS_PER_PAGE : reports.length;
+  const totalPages = Math.ceil(reports.length / REPORTS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * REPORTS_PER_PAGE;
+  const endIndex = startIndex + REPORTS_PER_PAGE;
   const paginatedReports = reports.slice(startIndex, endIndex);
 
   const handlePageChange = (page) => {
-    if (!isPaginationEnabled) return;
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -141,7 +226,7 @@ const ShowReports = () => {
 
   const renderPageNumbers = () => {
     const pageNumbers = [];
-    const maxVisiblePages = 5; // Show current page ±2
+    const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - 2);
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
@@ -154,12 +239,10 @@ const ShowReports = () => {
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          disabled={!isPaginationEnabled}
-          className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${currentPage === i && isPaginationEnabled
-            ? 'bg-gradient-to-r from-orange-400 to-amber-400 text-white shadow-md'
-            : 'bg-white/80 hover:bg-orange-100 text-[var(--text-primary)]'
-            } ${!isPaginationEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-          style={{ border: '1px solid var(--border-light)' }}
+          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${currentPage === i
+            ? 'bg-gradient-to-r from-yellow-500 to-yellow-500 text-white shadow-md'
+            : 'bg-white hover:bg-yellow-50 text-gray-900'
+            } border border-gray-200`}
         >
           {i}
         </button>
@@ -169,238 +252,235 @@ const ShowReports = () => {
     return pageNumbers;
   };
 
+  const SkeletonCard = () => (
+    <div className="flex items-center p-4 rounded-2xl border border-gray-100 shadow-sm bg-white animate-pulse">
+      <div className="w-12 h-12 bg-gray-200 rounded-xl mr-4"></div>
+      <div className="flex-1">
+        <div className="h-6 w-3/4 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 w-full bg-gray-200 rounded"></div>
+      </div>
+      <div className="h-6 w-20 bg-gray-200 rounded ml-4"></div>
+    </div>
+  );
+
   return (
-    <div className="h-auto overflow-auto bg-gradient-to-br from-slate-50 via-orange-50/20 to-rose-50/20 p-3 sm:p-6 md:p-8">
-      <ToastContainer />
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-xl mb-4 sm:mb-8">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-400/10 via-rose-400/10 to-purple-400/10"></div>
-        <div className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-orange-400/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-rose-400/5 rounded-full blur-3xl"></div>
-
-        <div className="relative z-10 p-3 sm:p-8 md:p-12 text-left">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-400 via-rose-400 to-purple-400 bg-clip-text text-transparent mb-3 sm:mb-4">
-            Reports Dashboard
-          </h1>
-          <p className="text-sm sm:text-base md:text-lg text-slate-300 font-light max-w-md sm:max-w-lg md:max-w-2xl leading-relaxed">
-            View and manage all submitted reports in one place. Monitor report statistics and take appropriate actions.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
-        <StatCard
-          icon={FileTextIcon}
-          title="Total Reports"
-          value={stats.totalReports}
-          color="from-orange-400 to-amber-400"
-        />
-        <StatCard
-          icon={UsersIcon}
-          title="Anonymous Reports"
-          value={stats.anonymousReports}
-          color="from-rose-400 to-pink-400"
-        />
-        <StatCard
-          icon={ClockIcon}
-          title="Pending Reports"
-          value={stats.pendingReports}
-          color="from-purple-400 to-indigo-400"
-        />
-      </div>
-
-      <div
-        className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-lg border border-[var(--border-light)] p-3 sm:p-6 md:p-8"
-        style={{ background: 'var(--card-bg)' }}
-      >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-6 md:mb-8">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-left" style={{ color: 'var(--text-primary)' }}>
-            Recent Reports
-          </h2>
-          <button
-            className="mt-2 sm:mt-0 bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            onClick={fetchReports}
-          >
-            Refresh
-          </button>
-        </div>
-        <div className="space-y-3 sm:space-y-4">
-          {isLoading ? (
-            <div className="text-center py-4 sm:py-6">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50">
+        <ToastContainer position="top-right" autoClose={3000} />
+        <div className="max-w-7xl mx-auto p-6 space-y-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900">Reports Dashboard</h1>
+              <p className="text-lg text-gray-600 mt-2">View and manage all submitted reports</p>
+            </div>
+            <button
+              onClick={fetchReports}
+              className="bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+            >
+              <Download size={20} />
+              Refresh
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StatsCard
+              title="Total Reports"
+              value={stats.totalReports}
+              icon={FileText}
+              trend={10}
+            />
+            <StatsCard
+              title="Anonymous Reports"
+              value={stats.anonymousReports}
+              icon={Users}
+              trend={5}
+            />
+            <StatsCard
+              title="Pending Reports"
+              value={stats.pendingReports}
+              icon={Clock}
+              trend={-2}
+            />
+          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search reports..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                onClick={exportToCSV}
+                className="bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white font-semibold px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-2"
+              >
+                <Download size={16} />
+                Export
+              </button>
+            </div>
+          </div>
+          {error ? (
+            <div className="bg-white rounded-2xl p-16 text-center">
+              <p className="text-lg text-red-600">{error}</p>
+              <button
+                onClick={fetchReports}
+                className="mt-4 bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-white px-6 py-3 rounded-xl transition-all duration-200"
+              >
+                Retry
+              </button>
+            </div>
+          ) : isLoading ? (
+            <div className="space-y-4">
+              {[...Array(6)].map((_, i) => (
+                <SkeletonCard key={`skeleton-${i}`} />
+              ))}
             </div>
           ) : paginatedReports.length === 0 ? (
-            <div className="text-left sm:text-center py-4 sm:py-6" style={{ color: 'var(--text-secondary)' }}>
-              No reports available
+            <div className="bg-white rounded-2xl p-16 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-yellow-500 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                <FileText size={32} className="text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No reports found</h3>
+              <p className="text-gray-600 mb-6">No reports are available at the moment</p>
             </div>
           ) : (
-            paginatedReports.map((report, index) => (
-              <div
-                key={`${report._id || index}-${currentPage}`}
-                className={`flex items-center p-3 sm:p-4 rounded-2xl hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-rose-50/50 transition-all duration-300 group cursor-pointer animate-fade-in ${!report.isRead ? 'font-bold bg-orange-50/20' : ''
-                  }`}
-                onClick={() => handleReportClick(report)}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div
-                  className={`p-2 sm:p-3 rounded-xl mr-3 sm:mr-4 ${report.isAnonymous
-                    ? 'bg-gradient-to-r from-rose-400 to-pink-400'
-                    : 'bg-gradient-to-r from-orange-400 to-amber-400'
-                    } text-white shadow-md group-hover:scale-105 transition-transform duration-300`}
-                >
-                  {report.isAnonymous ? <UsersIcon size={16} sm:size={18} /> : <FileTextIcon size={16} sm:size={18} />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center">
-                    <span className={`font-semibold text-sm sm:text-base group-hover:text-orange-500 transition-colors duration-300 ${!report.isRead ? 'font-bold' : ''}`} style={{ color: 'var(--text-primary)' }}>
-                      {report.isAnonymous ? 'Anonymous Report' : `Report by ${report.name || 'Unknown'}`}
-                    </span>
-                    {report.isRead && (
-                      <CheckIcon size={14} sm:size={16} className="ml-2 text-green-500" />
-                    )}
+            <>
+              <div className="space-y-4">
+                {paginatedReports.map((report, index) => (
+                  <div
+                    key={`${report._id || index}-${currentPage}`}
+                    className={`flex items-center p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md bg-white transition-all duration-300 group cursor-pointer ${!report.isRead ? 'bg-yellow-50/20' : ''}`}
+                    onClick={() => {
+                      setSelectedReport(report);
+                      if (!report.isRead) markReportAsRead(report._id);
+                    }}
+                  >
+                    <div
+                      className={`p-3 rounded-xl mr-4 ${report.isAnonymous
+                        ? 'bg-gradient-to-r from-rose-500 to-pink-500'
+                        : 'bg-gradient-to-r from-yellow-500 to-yellow-500'
+                        } text-white shadow-md group-hover:scale-105 transition-transform duration-300`}
+                    >
+                      {report.isAnonymous ? <Users size={18} /> : <FileText size={18} />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span className={`font-semibold text-base group-hover:text-yellow-600 transition-colors duration-300 ${!report.isRead ? 'font-bold' : ''} text-gray-900`}>
+                          {report.isAnonymous ? 'Anonymous Report' : `Report by ${report.name || 'Unknown'}`}
+                        </span>
+                        {report.isRead && (
+                          <Check size={16} className="ml-2 text-green-500" />
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 line-clamp-2">
+                        {report.message?.substring(0, 100) || 'No message'}...
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium text-gray-600 text-right">
+                      {formatTimeAgo(report.createdAt)}
+                    </div>
                   </div>
-                  <div className="text-xs sm:text-sm line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                    {report.message.substring(0, 100)}...
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm font-medium text-right" style={{ color: 'var(--text-secondary)' }}>
-                  {formatTimeAgo(report.createdAt)}
-                </div>
+                ))}
               </div>
-            ))
-          )}
-        </div>
-        {/* Pagination Controls */}
-        <div className="mt-3 sm:mt-6 flex  sm:flex-row items-center justify-center gap-2 sm:gap-3">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1 || !isPaginationEnabled}
-            className="px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-white/80 hover:bg-orange-100"
-            style={{ border: '1px solid var(--border-light)', color: 'var(--text-primary)' }}
-          >
-            Previous
-          </button>
-          <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
-            {renderPageNumbers()}
-          </div>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages || !isPaginationEnabled}
-            className="px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-white/80 hover:bg-orange-100"
-            style={{ border: '1px solid var(--border-light)', color: 'var(--text-primary)' }}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-
-      {selectedReport && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full relative border-0 animate-slide-in overflow-hidden">
-            {/* Header with gradient background */}
-            <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-6 py-5 relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/10 via-rose-400/10 to-purple-400/10"></div>
-              <button
-                className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-full transition-all duration-300"
-                onClick={closeModal}
-              >
-                <XIcon size={20} />
-              </button>
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-3 rounded-xl ${selectedReport.isAnonymous
-                      ? 'bg-gradient-to-r from-rose-400 to-pink-400'
-                      : 'bg-gradient-to-r from-orange-400 to-amber-400'
-                    } text-white shadow-lg`}>
-                    {selectedReport.isAnonymous ? <UsersIcon size={20} /> : <FileTextIcon size={20} />}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-6">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl disabled:opacity-50 transition-all duration-200"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex gap-2">
+                    {renderPageNumbers()}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">
-                      {selectedReport.isAnonymous ? 'Anonymous Report' : `Report Details`}
-                    </h3>
-                    {!selectedReport.isAnonymous && selectedReport.name && (
-                      <p className="text-slate-300 text-sm">Submitted by {selectedReport.name}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Date */}
-              <div className="flex items-center justify-end">
-                <span className="text-sm text-slate-500">
-                  {formatFullDate(selectedReport.createdAt)}
-                </span>
-              </div>
-
-              {/* Message Section */}
-              <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-5 border border-slate-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-6 bg-gradient-to-b from-orange-400 to-amber-400 rounded-full"></div>
-                  <h4 className="font-semibold text-slate-700">Report Message</h4>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
-                    {selectedReport.message}
-                  </p>
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              {!selectedReport.isAnonymous && selectedReport.email && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-6 bg-gradient-to-b from-blue-400 to-indigo-400 rounded-full"></div>
-                    <h4 className="font-semibold text-slate-700">Contact Information</h4>
-                  </div>
-                  <div className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
-                    <p className="text-slate-600 text-sm font-medium mb-1">Email Address</p>
-                    <p className="text-slate-800">{selectedReport.email}</p>
-                  </div>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl disabled:opacity-50 transition-all duration-200"
+                  >
+                    Next
+                  </button>
                 </div>
               )}
-
-              {/* Report Type Badge */}
-              <div className="flex items-center justify-center">
-                <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${selectedReport.isAnonymous
-                    ? 'bg-gradient-to-r from-rose-100 to-pink-100 text-rose-700 border border-rose-200'
-                    : 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border border-orange-200'
-                  }`}>
-                  {selectedReport.isAnonymous ? (
-                    <>
-                      <UsersIcon size={16} className="mr-2" />
-                      Anonymous Submission
-                    </>
-                  ) : (
-                    <>
-                      <FileTextIcon size={16} className="mr-2" />
-                      Identified Submission
-                    </>
-                  )}
-                </span>
+            </>
+          )}
+          <Modal isOpen={!!selectedReport} onClose={() => setSelectedReport(null)} title="Report Details" size="default">
+            {selectedReport && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-yellow-50 to-yellow-50 rounded-2xl border border-gray-100">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white ${selectedReport.isAnonymous ? 'bg-gradient-to-r from-rose-500 to-pink-500' : 'bg-gradient-to-r from-yellow-500 to-yellow-500'}`}>
+                    {selectedReport.isAnonymous ? <Users size={24} /> : <FileText size={24} />}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {selectedReport.isAnonymous ? 'Anonymous Report' : `Report by ${selectedReport.name || 'Unknown'}`}
+                    </h3>
+                    <p className="text-gray-600">{formatFullDate(selectedReport.createdAt)}</p>
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                  <h4 className="font-semibold text-gray-700 mb-3">Report Message</h4>
+                  <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                    <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
+                      {selectedReport.message || 'No message'}
+                    </p>
+                  </div>
+                </div>
+                {!selectedReport.isAnonymous && (selectedReport.name || selectedReport.email) && (
+                  <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                    <h4 className="font-semibold text-gray-700 mb-3">Contact Information</h4>
+                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm space-y-2">
+                      {selectedReport.name && (
+                        <>
+                          <p className="text-sm text-gray-600 font-medium">Name</p>
+                          <p className="text-gray-900">{selectedReport.name}</p>
+                        </>
+                      )}
+                      {selectedReport.email && (
+                        <>
+                          <p className="text-sm text-gray-600 font-medium">Email Address</p>
+                          <p className="text-gray-900">{selectedReport.email}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center justify-center">
+                  <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border ${selectedReport.isAnonymous
+                    ? 'bg-rose-100 text-rose-800 border-rose-200'
+                    : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                    }`}>
+                    {selectedReport.isAnonymous ? (
+                      <>
+                        <Users size={16} className="mr-2" />
+                        Anonymous Submission
+                      </>
+                    ) : (
+                      <>
+                        <FileText size={16} className="mr-2" />
+                        Identified Submission
+                      </>
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-end gap-4">
+                  <button
+                    onClick={() => setSelectedReport(null)}
+                    className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 border-t border-slate-200">
-              <button
-                className="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium transition-colors duration-200"
-                onClick={closeModal}
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 text-white px-6 py-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
-                onClick={closeModal}
-              >
-                Close
-              </button>
-            </div>
-          </div>
+            )}
+          </Modal>
         </div>
-      )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 

@@ -1,0 +1,75 @@
+/* Responsive Design */
+@media (max-width: 768px) {
+  .home .text-2xl {
+    font-size: 2rem;
+  }
+  .home .text-xl {
+    font-size: 1.25rem;
+  }
+  .home .text-base {
+    font-size: 0.875rem;
+  }
+  .home .text-sm {
+    font-size: 0.875rem;
+  }
+  .home .text-xs {
+    font-size: 0.75rem;
+  }
+  .home .p-4 {
+    padding: 1rem;
+  }
+  .home .p-3 {
+    padding: 0.75rem;
+  }
+  .home button {
+    font-size: 0.9375rem;
+    padding: 0.75rem 1.5rem;
+    min-width: 100px;
+    white-space: nowrap;
+  }
+  .home .w-6 {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .home .w-5 {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .home .text-2xl {
+    font-size: 1.75rem;
+  }
+  .home .text-xl {
+    font-size: 1.125rem;
+  }
+  .home .text-base {
+    font-size: 0.75rem;
+  }
+  .home .text-sm {
+    font-size: 0.75rem;
+  }
+  .home .text-xs {
+    font-size: 0.625rem;
+  }
+  .home .p-4 {
+    padding: 0.75rem;
+  }
+  .home .p-3 {
+    padding: 0.5rem;
+  }
+  .home button {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+  }
+  .home .w-6 {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  .home .w-5 {
+    width: 1rem;
+    height: 1rem;
+  }
+}

@@ -12,6 +12,7 @@ import './index.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { Component } from 'react';
 import ShowReports from './pages/ShowReports';
+import PodcastAdmin from './pages/PodcastAdmin';
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
@@ -69,6 +70,7 @@ const App = () => {
             <Route path="manage-blog" element={<ManageBlog />} />
             <Route path="registrations" element={<Registrations />} />
             <Route path="show-reports" element={<ShowReports />} />
+            <Route path="podcasts" element={<PodcastAdmin />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>

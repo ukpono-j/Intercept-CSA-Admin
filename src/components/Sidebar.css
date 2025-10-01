@@ -1,0 +1,77 @@
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar {
+    padding: 1rem; /* Matches Login card padding */
+  }
+  .sidebar .text-2xl {
+    font-size: 2rem; /* Matches Login title at 768px */
+  }
+  .sidebar .text-sm {
+    font-size: 0.875rem; /* Matches Login secondary text */
+  }
+  .sidebar .text-xs {
+    font-size: 0.75rem; /* Matches Login smaller text */
+  }
+  .sidebar .p-4 {
+    padding: 1rem; /* Matches Login card padding */
+  }
+  .sidebar .py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  .sidebar .px-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .sidebar button {
+    font-size: 0.875rem; /* Matches Login button text */
+    padding: 0.75rem 1.5rem; /* Matches Login button padding */
+    min-width: 80px; /* Compact for sidebar buttons */
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+  .sidebar .min-h-\[48px\] {
+    min-height: 48px; /* WCAG touch target */
+  }
+  .sidebar .w-5 {
+    width: 1.25rem; /* Smaller icons */
+    height: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    padding: 0.75rem; /* Matches Login card padding at 640px */
+  }
+  .sidebar .text-2xl {
+    font-size: 1.75rem; /* Matches Login title at 640px */
+  }
+  .sidebar .text-sm {
+    font-size: 0.75rem; /* Matches Login secondary text at 640px */
+  }
+  .sidebar .text-xs {
+    font-size: 0.625rem; /* Matches Login smaller text at 640px */
+  }
+  .sidebar .p-4 {
+    padding: 0.75rem; /* Matches Login card padding */
+  }
+  .sidebar .py-3 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .sidebar .px-3 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .sidebar button {
+    font-size: 0.75rem; /* Matches Login button text at 640px */
+    padding: 0.5rem 1rem;
+    min-width: 80px; /* Compact for sidebar buttons */
+  }
+  .sidebar .min-h-\[48px\] {
+    min-height: 48px; /* WCAG touch target */
+  }
+  .sidebar .w-5 {
+    width: 1rem; /* Smaller icons */
+    height: 1rem;
+  }
+}
